@@ -2,6 +2,8 @@
 AI-powered smart surveillance system using YOLOv8, OpenCV, and Streamlit for real-time crime detection, weapon detection, face blacklist recognition, intrusion alerts, person tracking, number plate OCR, evidence snapshots, and analytics dashboard.
 
 ### Project Structure
+
+```text
 crime_detection/
 │── app.py
 │── detect.py
@@ -23,3 +25,4 @@ crime_detection/
 ├── models/
 │   ├── yolov8n.pt
 │   └── best.pt
+```
