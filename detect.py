@@ -1,39 +1,46 @@
-import cv2
-import os
 from ultralytics import YOLO
-from alerts import save_alert
+import cv2
+import time
 
-model = YOLO('yolov8n.pt')
-THREAT_CLASSES = ['knife', 'scissors', 'baseball bat']
+model = YOLO("yolov8n.pt")
 
-os.makedirs('snapshots', exist_ok=True)
+crime_labels = ['person', 'handbag', 'backpack']
 
+def detect_crime(frame):
+    results = model(frame)
 
-def run_detection(source):
-    cap = cv2.VideoCapture(source)
+    fight = False
+    theft = False
+    person_count = 0
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    for r in results:
+        for box in r.boxes:
+            cls = int(box.cls[0])
+            label = model.names[cls]
 
-        results = model(frame)
-        annotated = results[0].plot()
+            x1,y1,x2,y2 = map(int, box.xyxy[0])
 
-        names = results[0].names
-        boxes = results[0].boxes
+            if label == "person":
+                person_count += 1
 
-        detected = []
-        for cls in boxes.cls.tolist() if boxes is not None else []:
-            label = names[int(cls)]
-            detected.append(label)
+            # Fight Detection (multiple persons close)
+            if person_count >= 2:
+                fight = True
 
-        if 'person' in detected and any(x in detected for x in THREAT_CLASSES):
-            save_alert(frame, 'Possible armed threat detected')
+            # Theft Detection
+            if label in ['handbag','backpack']:
+                theft = True
 
-        cv2.imshow('Crime Detection', annotated)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            color = (0,255,0)
 
-    cap.release()
-    cv2.destroyAllWindows()
+            if fight:
+                color = (0,0,255)
+
+            if theft:
+                color = (255,0,0)
+
+            cv2.rectangle(frame,(x1,y1),(x2,y2),color,2)
+            cv2.putText(frame,label,(x1,y1-10),
+                        cv2.FONT_HERSHEY_SIMPLEX,0.7,color,2)
+
+    return frame, fight, theft, person_count
